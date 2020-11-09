@@ -1,0 +1,43 @@
+# The following custom variables are used by template:
+# $(Notifications.Enabled) - True/False, enables the updates of board
+# $(Notifications.EnvBoardUrl) - The URL to env board application (for updating the env status via patch request)
+# $(deploymentSucceeded) - True/False, decides whether environment will be marked as succeeded or failed 
+parameters:
+  environment: '' 
+steps:
+  - task: Bash@3
+    displayName: Update env board
+    continueOnError: true
+    inputs:
+      targetType: 'inline'
+      failOnStderr: true        
+      script: |     
+
+        echo '[DEBUG] Notifications.Enabled=$(Notifications.Enabled)'        
+        echo '[DEBUG] deploymentSucceeded=$(deploymentSucceeded)'      
+        
+        if [ "$(Notifications.Enabled)" == "true" ]; then
+          
+          branchName='$(Build.SourceBranch)'          
+          branchName=${branchName/'refs/'}
+          branchName=${branchName/'heads/'/}
+          branchName=${branchName/'feature/'/}
+           
+          envName="${{ parameters.environment }}"
+          status=$([ "$(deploymentSucceeded)" == "True" ] && echo "Succeeded" || echo "Failed")    
+          
+          deploymentProps="{ status: '$status', branchName: '$branchName', deployedBy: '$(Build.RequestedFor)' }"
+          
+          payload="{name: '$envName', deployment: $deploymentProps}"
+          
+          echo "Payload: $payload"   
+
+          httpStatus=$(curl -s -o /dev/null -w "%{http_code}" -d "$payload" -H "Content-Type: application/json" -X PATCH $(Notifications.EnvBoardUrl))
+
+          if [ "$httpStatus" != "200" ]; then
+            1>&2 echo "Request failed with http response code $httpStatus"
+          fi
+
+        else
+          echo "The notification skipped because flag value was $(Notifications.Enabled)"
+        fi 

@@ -1,0 +1,24 @@
+﻿@using Humanizer
+@model EnvBoard.Web.Model.Environment
+
+    <div class="card env-tile @Model.Deployment?.Status.ToString().ToLowerInvariant()">
+        <h5 class="card-header">
+            @Model.Name.ToUpperInvariant()
+        </h5>
+        @if (Model.Deployment == null)
+        {
+            <div class="card-body deployment empty">Status unavailable</div>
+        }
+        else
+        {
+            <div class="card-body deployment-body">
+                <h5>@Model.Deployment.BranchName</h5>
+            </div>
+
+            <div class="card-footer text-muted text-right text-sm-right deployment-footer">
+                <span class="deployed-by">@Model.Deployment.DeployedBy</span>&nbsp;&nbsp;&nbsp;&nbsp;
+                <span class="deployed-at">@Model.Deployment.DeployedAt.Humanize()</span>
+            </div>
+        }
+    </div>
+
